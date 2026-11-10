@@ -1,0 +1,23 @@
+# --- secrets / per-PC settings (never commit) ---
+config.ini
+label_app_settings.json
+selftest.log
+
+# --- Python / build output ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+
+# --- leftovers ---
+working/
+*.bak
+*.bak2
+
+# --- PyCharm (keep run configurations, ignore personal workspace) ---
+.idea/workspace.xml
+.idea/shelf/
+.idea/usage.statistics.xml
