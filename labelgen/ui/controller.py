@@ -19,7 +19,7 @@ from labelgen.infrastructure.shell import Shell
 from labelgen.services.job import JobSettings
 from labelgen.services.label_service import LabelService
 from labelgen.services.pipeline import RunContext, Step, build_run_all_pipeline
-from labelgen.ui.view import LabelView
+from labelgen.ui.view import BatchState, LabelView
 
 
 @dataclass
@@ -28,6 +28,7 @@ class Session:
 
     batch: LabelBatch | None = None
     print_list_path: Path | None = None
+    folders_created: bool = False
     saved_to_db: bool = False
 
 
@@ -96,6 +97,15 @@ class LabelController:
         self.view.show_batch(self.service.print_list(batch),
                              self.service.folder_script(batch, job).replace("\r\n", "\n"),
                              self.service.rows(batch, job))
+        self._publish()
+
+    def _publish(self) -> None:
+        """Tell the view which steps are done for the batch on screen."""
+        s, b = self.session, self.session.batch
+        self.view.set_batch_state(None if not b else BatchState(
+            boxes=len(b.boxes), labels=len(b), first_box=b.boxes[0], last_box=b.boxes[-1],
+            folders_created=s.folders_created, print_list_saved=s.print_list_path is not None,
+            saved_to_db=s.saved_to_db))
 
     @staticmethod
     def _existing_warning(existing: dict[str, int], intro: str) -> str:
@@ -129,6 +139,8 @@ class LabelController:
         except OSError as e:
             self.view.show_error("Folder error", str(e))
             return
+        self.session.folders_created = True
+        self._publish()
         self.view.set_status(f"Created {made} folders under {job.staging_root}")
 
     def save_files(self) -> None:
@@ -141,6 +153,7 @@ class LabelController:
             self.view.show_error("File error", str(e))
             return
         self.session.print_list_path = paths[0]
+        self._publish()
         self.view.set_status(f"Saved labels list to {paths[0].parent} and 2 files to {paths[1].parent}")
         self.view.show_info("Saved", "Saved:\n\n" + "\n".join(str(p) for p in paths))
 
@@ -154,6 +167,7 @@ class LabelController:
             self.view.show_error("Save labels list", str(e))
             return
         self.session.print_list_path = path
+        self._publish()
         self.view.set_status(f"Labels list saved: {path}")
         self.view.show_info("Save labels list", f"Saved:\n\n{path}")
 
@@ -172,6 +186,7 @@ class LabelController:
         try:
             if not (path and path.exists()):
                 path = self.session.print_list_path = self.service.save_print_list(batch, job)
+                self._publish()
         except OSError as e:
             self.view.show_error("Print", str(e))
             return
@@ -193,6 +208,7 @@ class LabelController:
         self.view.set_fields({"start_box": "", "end_box": "", "count": "", "vin": ""})
         self.view.clear_batch()
         self.session = Session()
+        self._publish()
         self.view.set_status("Cleared. Enter a start and end box, then click Run all.")
 
     def save_to_db(self) -> None:
@@ -213,6 +229,7 @@ class LabelController:
             self.view.show_error("Database", f"Nothing was saved.\n\n{e}")
             return
         self.session.saved_to_db = True
+        self._publish()
         self.view.set_status(f"Saved {n} rows to the database.")
         self.view.show_info("Database", f"Saved {n} rows.")
 
@@ -250,8 +267,10 @@ class LabelController:
 
         if ctx.batch:
             self._show(ctx.batch, job)
+            self.session.folders_created = len(report.done) >= 2
             self.session.print_list_path = ctx.print_list_path
             self.session.saved_to_db = ctx.rows_saved > 0
+            self._publish()
 
         text = "\n".join(f"✔ {d}" for d in report.done)
         self.view.set_status(" | ".join(report.done) + ("" if report.ok else " | ERROR"))
@@ -264,9 +283,11 @@ class LabelController:
     def refresh_connection_preview(self) -> None:
         try:
             text = masked(self.config.connection_string())
+            state = "configured"
         except ValueError as e:
-            text = f"Not set up yet: {e}"
+            text, state = f"Not set up yet: {e}", "not_set_up"
         self.view.set_connection_preview(text)
+        self.view.set_db_state(state)
 
     def open_config(self) -> None:
         path = self.config.ensure()
@@ -280,8 +301,10 @@ class LabelController:
         try:
             self.service.test_connection()
         except Exception as e:  # noqa: BLE001
+            self.view.set_db_state("failed")
             self.view.show_error("Database", f"Connection failed:\n\n{e}{self._drivers_hint()}")
             return
+        self.view.set_db_state("connected")
         self.view.show_info("Database", "Connection OK.")
 
     def _drivers_hint(self) -> str:

@@ -201,7 +201,54 @@ class ButtonTests(ControllerTestCase):
         self.assertEqual(len(self.repo.rows), 84)
 
 
+class BatchStateTests(ControllerTestCase):
+    def test_badges_follow_each_step(self):
+        self.ctl.generate()
+        st = self.view.batch_state
+        self.assertEqual((st.boxes, st.labels, st.first_box, st.last_box), (3, 84, "BX3718", "BX3720"))
+        self.assertEqual((st.folders_created, st.print_list_saved, st.saved_to_db), (False, False, False))
+        self.ctl.create_folders()
+        self.assertTrue(self.view.batch_state.folders_created)
+        self.ctl.save_labels_list()
+        self.assertTrue(self.view.batch_state.print_list_saved)
+        self.ctl.save_to_db()
+        self.assertTrue(self.view.batch_state.saved_to_db)
+        self.ctl.clear_fields()
+        self.assertIsNone(self.view.batch_state)
+
+    def test_run_all_marks_all_steps(self):
+        self.view.form["use_db"] = "1"
+        self.ctl.run_all()
+        st = self.view.batch_state
+        self.assertEqual((st.folders_created, st.print_list_saved, st.saved_to_db), (True, True, True))
+
+    def test_run_all_db_failure_marks_only_done_steps(self):
+        self.view.form["use_db"] = "1"
+        self.repo.fail_insert = RuntimeError("timeout")
+        self.ctl.run_all()
+        st = self.view.batch_state
+        self.assertEqual((st.folders_created, st.print_list_saved, st.saved_to_db), (True, True, False))
+
+    def test_new_batch_resets_badges(self):
+        self.ctl.generate()
+        self.ctl.create_folders()
+        self.ctl.generate()
+        self.assertFalse(self.view.batch_state.folders_created)
+
+
 class ConnectionTabTests(ControllerTestCase):
+    def test_db_badge_states(self):
+        self.ctl.refresh_connection_preview()
+        self.assertEqual(self.view.db_state, "not_set_up")
+        self.c.config.path.write_text("[database]\nconnection_string = DSN=x;\n", encoding="utf-8")
+        self.ctl.refresh_connection_preview()
+        self.assertEqual(self.view.db_state, "configured")
+        self.ctl.test_connection()
+        self.assertEqual(self.view.db_state, "connected")
+        self.repo.fail_read = RuntimeError("down")
+        self.ctl.test_connection()
+        self.assertEqual(self.view.db_state, "failed")
+
     def test_preview_not_set_up(self):
         self.ctl.refresh_connection_preview()
         self.assertTrue(self.view.preview.startswith("Not set up yet"))

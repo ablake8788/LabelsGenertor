@@ -65,6 +65,7 @@ labelgen/
     controller.py            all button logic (no tkinter)
     view.py                  what the controller needs from a window
     tk_view.py               the Tkinter window
+    theme.py                 colours and fonts
     defaults.py              first-run form values
 tests/                       unit tests per layer (unittest)
 ```
@@ -90,4 +91,5 @@ tests/                       unit tests per layer (unittest)
 | Database columns / values | `labelgen/formatting/db_rows.py` |
 | Staging folder path | `labelgen/domain/locations.py` |
 | First-run form values | `labelgen/ui/defaults.py` |
+| Colours and fonts | `labelgen/ui/theme.py` |
 | Run all steps | `build_run_all_pipeline` in `labelgen/services/pipeline.py` |

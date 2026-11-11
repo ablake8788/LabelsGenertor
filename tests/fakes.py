@@ -37,6 +37,8 @@ class FakeView:
         self.batch_shown: tuple | None = None
         self.clipboard = ""
         self.preview = ""
+        self.batch_state = None
+        self.db_state = None
 
     # form
     def get_form(self):
@@ -74,6 +76,12 @@ class FakeView:
 
     def set_connection_preview(self, text):
         self.preview = text
+
+    def set_batch_state(self, state):
+        self.batch_state = state
+
+    def set_db_state(self, state):
+        self.db_state = state
 
     # helpers for assertions
     def kinds(self, kind):

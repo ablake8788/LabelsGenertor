@@ -7,6 +7,6 @@ TkLabelView                : the Tkinter window; only draws widgets and forwards
 """
 from labelgen.ui.controller import LabelController
 from labelgen.ui.defaults import DEFAULTS
-from labelgen.ui.view import LabelView
+from labelgen.ui.view import BatchState, DbState, LabelView
 
-__all__ = ["DEFAULTS", "LabelController", "LabelView"]
+__all__ = ["DEFAULTS", "BatchState", "DbState", "LabelController", "LabelView"]

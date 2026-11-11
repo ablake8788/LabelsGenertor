@@ -1,7 +1,23 @@
 """What the controller needs from a window. TkLabelView implements it; tests use a fake."""
 from __future__ import annotations
 
-from typing import Protocol, Sequence
+from dataclasses import dataclass
+from typing import Literal, Protocol, Sequence
+
+DbState = Literal["not_set_up", "configured", "connected", "failed"]
+
+
+@dataclass(frozen=True)
+class BatchState:
+    """Summary of the batch on screen, and which steps are done for it."""
+
+    boxes: int
+    labels: int
+    first_box: str
+    last_box: str
+    folders_created: bool = False
+    print_list_saved: bool = False
+    saved_to_db: bool = False
 
 
 class LabelView(Protocol):
@@ -19,5 +35,7 @@ class LabelView(Protocol):
     def set_status(self, text: str) -> None: ...
     def show_batch(self, print_list: str, folder_script: str, rows: Sequence[tuple]) -> None: ...
     def clear_batch(self) -> None: ...
+    def set_batch_state(self, state: BatchState | None) -> None: ...
     def set_clipboard(self, text: str) -> None: ...
     def set_connection_preview(self, text: str) -> None: ...
+    def set_db_state(self, state: DbState) -> None: ...
