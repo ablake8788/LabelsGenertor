@@ -1,0 +1,11 @@
+"""Where the app lives: next to the .exe when built with PyInstaller, otherwise the project folder."""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+
+def app_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).parent
+    return Path(__file__).resolve().parent.parent

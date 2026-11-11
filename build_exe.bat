@@ -39,7 +39,7 @@ if errorlevel 1 (
 
 echo [5/7] Building dist\LabelGenerator.exe ...
 "%PY%" -m PyInstaller --noconfirm --clean --onefile --windowed ^
-    --name LabelGenerator --hidden-import pyodbc --distpath dist label_app.py
+    --name LabelGenerator --hidden-import pyodbc --collect-submodules labelgen --distpath dist label_app.py
 if errorlevel 1 goto fail
 if not exist "dist\config.ini" copy "config.ini" "dist\config.ini" >nul
 
